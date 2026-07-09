@@ -140,6 +140,21 @@ app.get('/api/stats', (req, res) => {
   }
 });
 
+// Rota DELETE para remover um registro
+app.delete('/api/registrations/:id', (req, res) => {
+  try {
+    const { id } = req.params;
+    const deleteStmt = db.prepare('DELETE FROM registrations WHERE id = ?');
+    deleteStmt.run(id);
+    console.log(`[Registro Removido] ID: ${id}`);
+    res.json({ status: 'success', message: 'Registro removido com sucesso.' });
+  } catch (error) {
+    console.error('Erro ao remover registro:', error);
+    res.status(500).json({ status: 'error', message: 'Erro ao remover registro do banco de dados.' });
+  }
+});
+
+
 // Inicia o servidor
 app.listen(PORT, () => {
   console.log(`==================================================`);

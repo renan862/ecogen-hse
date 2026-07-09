@@ -115,12 +115,49 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td><span class="reg-badge-sector">${row.sector || '-'}</span></td>
                 <td><span class="reg-badge-reason ${reasonBadgeClass}">${row.reason || '-'}</span></td>
                 <td><span class="reg-code">${row.verificationCode || '-'}</span></td>
+                <td style="text-align: center;">
+                    <button class="btn-delete" title="Excluir registro">
+                        <i data-lucide="trash-2"></i>
+                    </button>
+                </td>
             `;
+
+            // Vincular evento de exclusão
+            const deleteBtn = tr.querySelector('.btn-delete');
+            deleteBtn.addEventListener('click', () => {
+                deleteRegistration(row.id, row.name);
+            });
 
             tableBody.appendChild(tr);
         });
 
         lucide.createIcons();
+    }
+
+    // Deletar registro do banco de dados
+    async function deleteRegistration(id, name) {
+        if (!confirm(`Deseja realmente excluir a integração de "${name}"? Esta ação não pode ser desfeita.`)) {
+            return;
+        }
+
+        try {
+            const response = await fetch(`/api/registrations/${id}`, {
+                method: 'DELETE'
+            });
+
+            if (!response.ok) throw new Error('Erro ao excluir registro.');
+
+            const result = await response.json();
+            if (result.status === 'success') {
+                // Recarregar os dados do dashboard
+                loadDashboardData();
+            } else {
+                alert('Erro ao excluir registro: ' + result.message);
+            }
+        } catch (error) {
+            console.error('Erro ao deletar registro:', error);
+            alert('Falha ao excluir registro do servidor.');
+        }
     }
 
     // Format CPF for representation (000.000.000-00)

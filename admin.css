@@ -281,6 +281,30 @@
     font-size: 0.9rem;
 }
 
+/* Delete Button Styles */
+.btn-delete {
+    background: none;
+    border: none;
+    color: var(--color-danger);
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.btn-delete:hover {
+    background-color: var(--color-danger-light);
+    transform: scale(1.1);
+}
+
+.btn-delete svg {
+    width: 18px;
+    height: 18px;
+}
+
 /* Responsive Overrides */
 @media (max-width: 768px) {
     .filter-bar {
