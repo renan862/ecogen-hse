@@ -109,9 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
     let savedVolume = 1;
 
     // A API do YouTube requer uma função global onYouTubeIframeAPIReady
-    window.onYouTubeIframeAPIReady = function() {
+    window.onYouTubeIframeAPIReady = function () {
         player = new YT.Player('hse-video', {
-            videoId: 'bX831WFoyEc',
+            videoId: 'HqzmLO4Pi7A',
             playerVars: {
                 'autoplay': 0,
                 'controls': 0,       // Esconde controles padrão do YouTube
@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
             videoContainer.classList.add('playing');
             playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
             lucide.createIcons();
-            
+
             // Monitora o tempo atual do vídeo a cada 250ms
             clearInterval(updateInterval);
             updateInterval = setInterval(monitorPlayback, 250);
@@ -216,7 +216,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Vincula cliques para Play/Pause
     playCenterBtn.addEventListener('click', togglePlay);
     playPauseBtn.addEventListener('click', togglePlay);
-    
+
     // O overlay cobrindo o iframe intercepta cliques para Play/Pause
     const controlsOverlay = document.querySelector('.video-controls-overlay');
     if (controlsOverlay) {
@@ -776,20 +776,20 @@ document.addEventListener('DOMContentLoaded', () => {
             },
             body: JSON.stringify(payload)
         })
-        .then(response => {
-            if (!response.ok) {
-                throw new Error(`Erro na requisição: ${response.status}`);
-            }
-            return response.json();
-        })
-        .then(res => {
-            console.log("Google Sheets: Registro salvo no banco de dados local com sucesso.", res);
-            return true;
-        })
-        .catch(error => {
-            console.error("Google Sheets: Erro ao enviar dados para o servidor local:", error);
-            return false;
-        });
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Erro na requisição: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(res => {
+                console.log("Google Sheets: Registro salvo no banco de dados local com sucesso.", res);
+                return true;
+            })
+            .catch(error => {
+                console.error("Google Sheets: Erro ao enviar dados para o servidor local:", error);
+                return false;
+            });
     }
 
     function generateCertificate() {
