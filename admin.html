@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo HSE | Ecogen Brasil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="admin.css">
+    <!-- Lucide Icons for premium visuals -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SheetJS for exporting to Excel .xlsx -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <img src="media/color-logo.png" alt="Ecogen Brasil" class="header-logo">
+            </div>
+            <div class="header-tag">
+                <span class="tag-badge">Painel Administrativo - HSE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-container">
+
+        <!-- Dashboard Header -->
+        <!--
+        <div class="dashboard-header">
+            <h1>Controle de Integração HSE</h1>
+            <p>Gerencie, pesquise e exporte os registros dos colaboradores que concluíram o treinamento de segurança.
+            </p>
+        </div>-->
+
+        <!-- Stats Section -->
+        <!--
+        <section class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-icon"><i data-lucide="users"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Total de Integrações</span>
+                    <h2 class="stat-value" id="stat-total">0</h2>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i data-lucide="calendar"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Concluídos Hoje</span>
+                    <h2 class="stat-value" id="stat-today">0</h2>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon"><i data-lucide="building"></i></div>
+                <div class="stat-info">
+                    <span class="stat-label">Setor mais Ativo</span>
+                    <h2 class="stat-value" id="stat-top-sector">-</h2>
+                </div>
+            </div>
+        </section>
+-->
+        <!-- Filters and Table Card -->
+        <section class="card-wrapper admin-card">
+            <!-- Filter Bar -->
+
+            <div class="filter-bar">
+                <div class="search-box">
+                    <i data-lucide="search" class="search-icon"></i>
+                    <input type="text" id="search-input"
+                        placeholder="Pesquisar por Nome, CPF, Empresa ou Cód. Verificação...">
+                </div>
+
+                <div class="filter-controls">
+                    <div class="select-wrapper select-filter">
+                        <i data-lucide="filter" class="input-icon"></i>
+                        <select id="sector-filter">
+                            <option value="">Todos os Setores</option>
+                            <option value="Operações">Operações</option>
+                            <option value="Manutenção">Manutenção</option>
+                            <option value="PCM">PCM</option>
+                            <option value="Qualidade">Qualidade</option>
+                            <option value="HSE">HSE</option>
+                            <option value="Almoxarifado">Almoxarifado</option>
+                        </select>
+                    </div>
+
+                    <!-- <button id="btn-export-excel" class="btn btn-secondary btn-export">
+                        <i data-lucide="file-spreadsheet"></i>
+                        <span>Exportar Excel</span>
+                    </button>-->
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="table-container">
+                <table class="registrations-table">
+                    <thead>
+                        <tr>
+                            <th>Data/Hora</th>
+                            <th>Nome Completo</th>
+                            <th>CPF</th>
+                            <th>Empresa</th>
+                            <th>Setor Responsável</th>
+                            <th>Presença</th>
+                            <th>Cód. Verificação</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body">
+                        <!-- Rows injected dynamically -->
+                    </tbody>
+                </table>
+
+                <!-- Empty State -->
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <i data-lucide="folder-open" class="empty-icon"></i>
+                    <h3>Nenhum registro encontrado</h3>
+                    <p>Tente ajustar os filtros de busca ou aguarde novas integrações.</p>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>© 2026 Ecogen Brasil. Todos os direitos reservados. Compromisso com a Vida e Segurança em Primeiro Lugar.</p>
+    </footer>
+
+    <script src="admin.js"></script>
+</body>
+
+</html>

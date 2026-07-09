@@ -1,0 +1,12 @@
+{
+  "name": "site-hse",
+  "version": "1.0.0",
+  "description": "Integração de Segurança (HSE) com Node.js e SQLite",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}

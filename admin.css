@@ -1,0 +1,303 @@
+/* ==================================================
+   Painel Administrativo HSE - Estilos Customizados
+   ================================================== */
+
+/* Dashboard Header */
+.dashboard-header {
+    margin-bottom: 1rem;
+    animation: fadeIn 0.5s ease-out;
+}
+
+.dashboard-header h1 {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--color-dark);
+    font-size: 1.85rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+}
+
+.dashboard-header p {
+    color: var(--color-text-light);
+    font-size: 0.95rem;
+}
+
+/* Stats Section */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
+    animation: fadeIn 0.6s ease-out;
+}
+
+.stat-card {
+    background-color: var(--color-bg-card);
+    border-radius: var(--radius-md);
+    padding: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 1.25rem;
+    box-shadow: var(--shadow-sm);
+    border: 1px solid rgba(226, 232, 240, 0.8);
+    transition: var(--transition);
+}
+
+.stat-card:hover {
+    transform: translateY(-4px);
+    box-shadow: var(--shadow-md);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background-color: var(--color-primary-light);
+    color: var(--color-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.stat-icon svg {
+    width: 24px;
+    height: 24px;
+}
+
+.stat-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: var(--color-text-light);
+    font-weight: 500;
+}
+
+.stat-value {
+    font-family: 'Montserrat', sans-serif;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--color-dark);
+    margin-top: 0.2rem;
+}
+
+/* Filters & Table Wrapper */
+.admin-card {
+    padding: 0;
+    border-radius: var(--radius-md);
+}
+
+.filter-bar {
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    background-color: #fafbfc;
+}
+
+.search-box {
+    position: relative;
+    flex: 1;
+    min-width: 300px;
+}
+
+.search-icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--color-text-light);
+    width: 18px;
+    height: 18px;
+}
+
+.search-box input {
+    width: 100%;
+    padding: 0.75rem 1rem 0.75rem 2.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 8px;
+    font-family: inherit;
+    font-size: 0.92rem;
+    transition: var(--transition);
+    color: var(--color-text);
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(13, 122, 91, 0.1);
+}
+
+.filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.select-filter {
+    margin-top: 0;
+    width: 220px;
+}
+
+.select-filter select {
+    padding-left: 2.5rem;
+}
+
+.btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    height: 44px;
+}
+
+/* Table Design */
+.table-container {
+    width: 100%;
+    overflow-x: auto;
+    position: relative;
+}
+
+.registrations-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+    white-space: nowrap;
+}
+
+.registrations-table th {
+    background-color: var(--color-bg-main);
+    color: var(--color-text-light);
+    font-weight: 600;
+    padding: 1rem 1.5rem;
+    border-bottom: 2px solid var(--color-border);
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.5px;
+}
+
+.registrations-table td {
+    padding: 1.1rem 1.5rem;
+    border-bottom: 1px solid var(--color-border);
+    color: var(--color-text);
+    vertical-align: middle;
+}
+
+.registrations-table tbody tr {
+    transition: background-color 0.15s ease;
+}
+
+.registrations-table tbody tr:hover {
+    background-color: rgba(247, 250, 252, 0.85);
+}
+
+/* Cell Specific Styles */
+.reg-date {
+    font-weight: 500;
+    color: var(--color-text-light);
+}
+
+.reg-name {
+    font-weight: 600;
+    color: var(--color-dark);
+}
+
+.reg-cpf {
+    font-family: monospace;
+    font-size: 0.95rem;
+    color: #4a5568;
+}
+
+.reg-badge-sector {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    background-color: #ebf8ff;
+    color: #2b6cb0;
+}
+
+.reg-badge-reason {
+    display: inline-block;
+    padding: 0.25rem 0.6rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.reg-badge-reason.visit {
+    background-color: #fefcbf;
+    color: #b7791f;
+}
+
+.reg-badge-reason.service {
+    background-color: #e6fffa;
+    color: #319795;
+}
+
+.reg-code {
+    font-family: monospace;
+    font-size: 0.85rem;
+    background-color: var(--color-bg-main);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--color-border);
+    color: var(--color-text-light);
+}
+
+/* Empty State */
+.empty-state {
+    padding: 4rem 2rem;
+    text-align: center;
+    animation: fadeIn 0.4s ease-out;
+}
+
+.empty-icon {
+    width: 64px;
+    height: 64px;
+    color: var(--color-border);
+    margin-bottom: 1rem;
+}
+
+.empty-state h3 {
+    font-family: 'Montserrat', sans-serif;
+    color: var(--color-dark);
+    font-size: 1.15rem;
+    margin-bottom: 0.25rem;
+}
+
+.empty-state p {
+    color: var(--color-text-light);
+    font-size: 0.9rem;
+}
+
+/* Responsive Overrides */
+@media (max-width: 768px) {
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .search-box {
+        min-width: 100%;
+    }
+    
+    .filter-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .select-filter {
+        width: 100%;
+    }
+}

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Integração de Segurança (HSE) | Ecogen Brasil</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+    <!-- html2canvas for certificate image capture -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <!-- html2pdf.js for generating PDF client-side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <!-- Lucide Icons for premium visual cues -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body>
+    <header class="app-header">
+        <div class="header-container">
+            <div class="logo-area">
+                <img src="media/color-logo.png" alt="Ecogen Brasil" class="header-logo">
+            </div>
+            <div class="header-tag">
+                <span class="tag-badge">Adriana Gomes - Departamento HSE</span>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-container">
+        <!-- Stepper indicator for showing user progress -->
+        <nav class="stepper" aria-label="Progresso da Integração">
+            <div class="step active" id="step-nav-1">
+                <div class="step-icon"><i data-lucide="video"></i></div>
+                <div class="step-label">1. Vídeo</div>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step" id="step-nav-2">
+                <div class="step-icon"><i data-lucide="clipboard-check"></i></div>
+                <div class="step-label">2. Questionário</div>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step" id="step-nav-3">
+                <div class="step-icon"><i data-lucide="file-text"></i></div>
+                <div class="step-label">3. Termo</div>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step" id="step-nav-4">
+                <div class="step-icon"><i data-lucide="pen-tool"></i></div>
+                <div class="step-label">4. Assinatura</div>
+            </div>
+            <div class="step-divider"></div>
+            <div class="step" id="step-nav-5">
+                <div class="step-icon"><i data-lucide="award"></i></div>
+                <div class="step-label">5. Certificado</div>
+            </div>
+        </nav>
+
+        <section class="card-wrapper">
+            <!-- STEP 1: VIDEO PLAYER -->
+            <div class="step-content active" id="view-video">
+                <div class="step-header">
+                    <h2>Vídeo de Integração</h2>
+                    <p>Assista ao vídeo de integração de segurança completo para liberar o formulário de acesso.</p>
+                </div>
+
+                <div class="video-container">
+                    <video id="hse-video" playsinline>
+                        <source src="media/video.mp4 " type="video/mp4">
+                        Seu navegador não suporta a tag de vídeo.
+                    </video>
+
+                    <!-- Custom Premium Video Controls (No seeking) -->
+                    <div class="video-controls-overlay">
+                        <button class="play-center-btn" id="play-center-btn" aria-label="Reproduzir vídeo">
+                            <i data-lucide="play" class="play-icon-large"></i>
+                        </button>
+                    </div>
+
+                    <div class="video-controls-bar">
+                        <div class="control-row">
+                            <button type="button" id="play-pause-btn" class="control-btn" aria-label="Play/Pause">
+                                <i data-lucide="play"></i>
+                            </button>
+
+                            <div class="video-time" id="video-time-display">00:00 / 00:00</div>
+
+                            <div class="video-progress-container">
+                                <!-- Non-clickable visual progress bar -->
+                                <div class="video-progress-bar">
+                                    <div class="video-progress-fill" id="video-progress-fill"></div>
+                                </div>
+                            </div>
+
+                            <button type="button" id="mute-btn" class="control-btn" aria-label="Mudo">
+                                <i data-lucide="volume-2"></i>
+                            </button>
+                            <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="1"
+                                class="volume-slider" aria-label="Volume">
+
+                            <button type="button" id="fullscreen-btn" class="control-btn" aria-label="Tela cheia">
+                                <i data-lucide="maximize"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-footer">
+                    <p class="video-instruction-text" id="video-status-text">
+                        <i data-lucide="info" class="inline-icon"></i>
+                        O formulário será desbloqueado automaticamente ao concluir o vídeo. Não é permitido avançar a
+                        gravação.
+                    </p>
+                    <button id="btn-to-questions" class="btn btn-primary" disabled>
+                        <span>Prosseguir para Questionário</span>
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: FIXATION QUIZ -->
+            <div class="step-content" id="view-quiz">
+                <div class="step-header">
+                    <h2>Questionário de Fixação</h2>
+                    <p>Responda às perguntas sobre as normas de segurança do vídeo. Nota mínima de 80% (4 de 5 corretas)
+                        para prosseguir.</p>
+                </div>
+
+                <div id="quiz-container">
+                    <form id="quiz-form" onsubmit="return false;">
+                        <!-- Question 1 -->
+                        <div class="quiz-question-card" data-qindex="1">
+                            <p class="quiz-question-title"><strong>1.</strong> Ao chegar ao local onde a atividade será
+                                realizada, qual deve ser a primeira ação do colaborador?</p>
+                            <div class="quiz-options">
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q1" value="A" required>
+                                    <span class="quiz-option-letter">A</span>
+                                    <span class="quiz-option-text">Iniciar a atividade imediatamente para ganhar
+                                        tempo.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q1" value="B" required>
+                                    <span class="quiz-option-letter">B</span>
+                                    <span class="quiz-option-text">Conversar com os colegas e depois verificar o
+                                        local.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q1" value="C" required>
+                                    <span class="quiz-option-letter">C</span>
+                                    <span class="quiz-option-text">Realizar e analisar a Análise Preliminar de Risco
+                                        (APR) antes de iniciar a atividade.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q1" value="D" required>
+                                    <span class="quiz-option-letter">D</span>
+                                    <span class="quiz-option-text">Buscar as ferramentas e começar o serviço, avaliando
+                                        os riscos durante a execução.</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Question 2 -->
+                        <div class="quiz-question-card" data-qindex="2">
+                            <p class="quiz-question-title"><strong>2.</strong> Cite duas atividades específicas que
+                                exigem autorização com abertura de Permissão de Trabalho (PT) antes de serem realizadas.
+                            </p>
+                            <div class="quiz-options">
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q2" value="A" required>
+                                    <span class="quiz-option-letter">A</span>
+                                    <span class="quiz-option-text">Limpeza de escritório e organização de
+                                        materiais.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q2" value="B" required>
+                                    <span class="quiz-option-letter">B</span>
+                                    <span class="quiz-option-text">Trabalho em altura acima de 2 metros e trabalho com
+                                        alta tensão.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q2" value="C" required>
+                                    <span class="quiz-option-letter">C</span>
+                                    <span class="quiz-option-text">Caminhada pela área operacional e inspeção
+                                        visual.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q2" value="D" required>
+                                    <span class="quiz-option-letter">D</span>
+                                    <span class="quiz-option-text">Transporte manual de materiais e preenchimento de
+                                        formulários.</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Question 3 -->
+                        <div class="quiz-question-card" data-qindex="3">
+                            <p class="quiz-question-title"><strong>3.</strong> Antes de realizar qualquer intervenção em
+                                um equipamento, qual é o procedimento correto?</p>
+                            <div class="quiz-options">
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q3" value="A" required>
+                                    <span class="quiz-option-letter">A</span>
+                                    <span class="quiz-option-text">Apenas desligar o equipamento.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q3" value="B" required>
+                                    <span class="quiz-option-letter">B</span>
+                                    <span class="quiz-option-text">Realizar o bloqueio e a identificação de todas as
+                                        fontes de energia antes de iniciar a atividade.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q3" value="C" required>
+                                    <span class="quiz-option-letter">C</span>
+                                    <span class="quiz-option-text">Pedir para um colega observar enquanto o serviço é
+                                        realizado.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q3" value="D" required>
+                                    <span class="quiz-option-letter">D</span>
+                                    <span class="quiz-option-text">Iniciar o serviço rapidamente para reduzir o tempo de
+                                        parada.</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Question 4 -->
+                        <div class="quiz-question-card" data-qindex="4">
+                            <p class="quiz-question-title"><strong>4.</strong> Qual é a responsabilidade do colaborador
+                                em relação aos Equipamentos de Proteção Individual (EPIs)?</p>
+                            <div class="quiz-options">
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q4" value="A" required>
+                                    <span class="quiz-option-letter">A</span>
+                                    <span class="quiz-option-text">Utilizar apenas quando houver fiscalização.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q4" value="B" required>
+                                    <span class="quiz-option-letter">B</span>
+                                    <span class="quiz-option-text">Compartilhar os EPIs com outros colaboradores.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q4" value="C" required>
+                                    <span class="quiz-option-letter">C</span>
+                                    <span class="quiz-option-text">Utilizar os EPIs obrigatórios em bom estado de
+                                        conservação durante toda a atividade.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q4" value="D" required>
+                                    <span class="quiz-option-letter">D</span>
+                                    <span class="quiz-option-text">Usar apenas os EPIs que considerar
+                                        necessários.</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Question 5 -->
+                        <div class="quiz-question-card" data-qindex="5">
+                            <p class="quiz-question-title"><strong>5.</strong> O que deve ser feito ao identificar uma
+                                condição insegura no ambiente de trabalho?</p>
+                            <div class="quiz-options">
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q5" value="A" required>
+                                    <span class="quiz-option-letter">A</span>
+                                    <span class="quiz-option-text">Ignorar, caso não esteja atrapalhando a
+                                        atividade.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q5" value="B" required>
+                                    <span class="quiz-option-letter">B</span>
+                                    <span class="quiz-option-text">Corrigir apenas se tiver tempo disponível.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q5" value="C" required>
+                                    <span class="quiz-option-letter">C</span>
+                                    <span class="quiz-option-text">Comunicar imediatamente ao responsável e, quando
+                                        possível e seguro, eliminar ou sinalizar o risco antes de iniciar a
+                                        atividade.</span>
+                                </label>
+                                <label class="quiz-option-pill">
+                                    <input type="radio" name="q5" value="D" required>
+                                    <span class="quiz-option-letter">D</span>
+                                    <span class="quiz-option-text">Continuar trabalhando normalmente.</span>
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Quiz Feedback Result Area -->
+                <div id="quiz-result-area" class="quiz-result-card" style="display: none;">
+                    <div class="quiz-result-icon" id="quiz-result-icon">
+                        <i data-lucide="check-circle-2"></i>
+                    </div>
+                    <h3 id="quiz-result-title">Aprovado!</h3>
+                    <p id="quiz-result-text">Você acertou X de 5 questões.</p>
+                </div>
+
+                <div class="action-footer">
+                    <span class="error-message" id="error-quiz"
+                        style="display: none; margin-top: 0; margin-bottom: 1rem; width: 100%;">Por favor, responda a
+                        todas as questões antes de enviar.</span>
+
+                    <button type="button" id="btn-submit-quiz" class="btn btn-primary">
+                        <span>Enviar Questionário</span>
+                        <i data-lucide="send"></i>
+                    </button>
+
+                    <button type="button" id="btn-quiz-retry-video" class="btn btn-secondary" style="display: none;">
+                        <i data-lucide="rotate-ccw"></i>
+                        <span>Voltar ao Vídeo</span>
+                    </button>
+
+                    <button type="button" id="btn-quiz-retry" class="btn btn-secondary" style="display: none;">
+                        <i data-lucide="refresh-cw"></i>
+                        <span>Tentar Novamente</span>
+                    </button>
+
+                    <button type="button" id="btn-quiz-to-questions" class="btn btn-primary" style="display: none;">
+                        <span>Prosseguir para Termo</span>
+                        <i data-lucide="arrow-right"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: AUTHORIZATION TERM -->
+            <div class="step-content" id="view-questions">
+                <div class="step-header">
+                    <h2>Termo de Autorização de Acesso</h2>
+                    <p>Formulário para autorização de acesso de visitantes, terceiros e prestadores de serviço.</p>
+                </div>
+
+                <form id="hse-form" novalidate>
+                    <!-- Personal Info Section -->
+                    <div class="form-section-title">
+                        <i data-lucide="user"></i> Dados Pessoais e Empresa
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group full-width">
+                            <label for="input-name">2. Nome completo <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <i data-lucide="user" class="input-icon"></i>
+                                <input type="text" id="input-name" required placeholder="Insira seu nome completo">
+                            </div>
+                            <span class="error-message" id="error-name">Nome completo é obrigatório.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-cpf">3. Informe seu CPF <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <i data-lucide="credit-card" class="input-icon"></i>
+                                <input type="text" id="input-cpf" required placeholder="000.000.000-00" maxlength="14">
+                            </div>
+                            <span class="error-message" id="error-cpf">CPF inválido ou obrigatório.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="input-company">6. Qual empresa você representa? <span
+                                    class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <i data-lucide="briefcase" class="input-icon"></i>
+                                <input type="text" id="input-company" required placeholder="Insira o nome da empresa">
+                            </div>
+                            <span class="error-message" id="error-company">Nome da empresa é obrigatório.</span>
+                        </div>
+
+                        <div class="form-group full-width">
+                            <label for="input-emergency">4. Contato familiar para emergência (Nome e Grau de Parentesco)
+                                <span class="required">*</span></label>
+                            <div class="input-wrapper">
+                                <i data-lucide="phone" class="input-icon"></i>
+                                <input type="text" id="input-emergency" required
+                                    placeholder="Ex: Maria (Esposa) - (11) 99999-9999">
+                            </div>
+                            <span class="error-message" id="error-emergency">Contato de emergência é obrigatório.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>5. Qual setor responsável pela sua visita? <span class="required">*</span></label>
+                            <div class="select-wrapper">
+                                <i data-lucide="building" class="input-icon"></i>
+                                <select id="input-sector" required>
+                                    <option value="" disabled selected>Selecione o setor...</option>
+                                    <option value="Operações">Operações</option>
+                                    <option value="Manutenção">Manutenção</option>
+                                    <option value="PCM">PCM</option>
+                                    <option value="Qualidade">Qualidade</option>
+                                    <option value="HSE">HSE</option>
+                                    <option value="Almoxarifado">Almoxarifado</option>
+                                </select>
+                            </div>
+                            <span class="error-message" id="error-sector">Selecione o setor responsável.</span>
+                        </div>
+
+                        <div class="form-group">
+                            <label>7. Sua presença em nossas instalações se dá por: <span
+                                    class="required">*</span></label>
+                            <div class="radio-card-group">
+                                <label class="radio-card">
+                                    <input type="radio" name="presence_reason" value="Visita" required>
+                                    <div class="radio-card-content">
+                                        <span class="radio-title">Visita</span>
+                                        <span class="radio-desc">Acesso a áreas administrativas/produtivas para análise
+                                            visual, alinhamento e orçamentos.</span>
+                                    </div>
+                                </label>
+                                <label class="radio-card">
+                                    <input type="radio" name="presence_reason" value="Prestação de serviço" required>
+                                    <div class="radio-card-content">
+                                        <span class="radio-title">Prestação de serviço</span>
+                                        <span class="radio-desc">Trabalho especializado ou assistência técnica sem
+                                            entrega de produto físico e com emissão de NF.</span>
+                                    </div>
+                                </label>
+                            </div>
+                            <span class="error-message" id="error-presence">Selecione a razão da presença.</span>
+                        </div>
+                    </div>
+
+                    <!-- EPIs Section -->
+                    <div class="form-section-title">
+                        <i data-lucide="shield-check"></i> 8. Porte Obrigatório de EPI's
+                    </div>
+                    <p class="section-desc">Para acesso à nossa fábrica é obrigatório o uso dos seguintes EPIs. Confirme
+                        o porte deles. Caso não possua, entre em contato com o solicitante da visita.</p>
+
+                    <div class="epi-grid">
+                        <label class="epi-checkbox-card">
+                            <input type="checkbox" name="epi_check" value="Capacete">
+                            <div class="epi-content">
+                                <div class="epi-icon"><i data-lucide="check-square"></i></div>
+                                <span class="epi-label">Capacete</span>
+                            </div>
+                        </label>
+
+                        <label class="epi-checkbox-card">
+                            <input type="checkbox" name="epi_check" value="Óculos">
+                            <div class="epi-content">
+                                <div class="epi-icon"><i data-lucide="check-square"></i></div>
+                                <span class="epi-label">Óculos de Segurança</span>
+                            </div>
+                        </label>
+
+                        <label class="epi-checkbox-card">
+                            <input type="checkbox" name="epi_check" value="Perneira">
+                            <div class="epi-content">
+                                <div class="epi-icon"><i data-lucide="check-square"></i></div>
+                                <span class="epi-label">Perneira</span>
+                            </div>
+                        </label>
+
+                        <label class="epi-checkbox-card">
+                            <input type="checkbox" name="epi_check" value="Protetor auricular">
+                            <div class="epi-content">
+                                <div class="epi-icon"><i data-lucide="check-square"></i></div>
+                                <span class="epi-label">Protetor Auricular</span>
+                            </div>
+                        </label>
+
+                        <label class="epi-checkbox-card">
+                            <input type="checkbox" name="epi_check" value="Calçado de segurança">
+                            <div class="epi-content">
+                                <div class="epi-icon"><i data-lucide="check-square"></i></div>
+                                <span class="epi-label">Calçado de Segurança</span>
+                            </div>
+                        </label>
+
+                        <label class="epi-checkbox-card full-width-epi">
+                            <input type="checkbox" name="epi_check" value="Luvas">
+                            <div class="epi-content">
+                                <div class="epi-icon"><i data-lucide="check-square"></i></div>
+                                <span class="epi-label">Luva de segurança em conformidade com a atividade (ou Não
+                                    Aplicável para Visita Técnica)</span>
+                            </div>
+                        </label>
+
+                        <label class="epi-checkbox-card full-width-epi">
+                            <input type="checkbox" name="epi_check" value="Vestimenta">
+                            <div class="epi-content">
+                                <div class="epi-icon"><i data-lucide="check-square"></i></div>
+                                <span class="epi-label">Vestimenta em conformidade com a atividade que será
+                                    executada</span>
+                            </div>
+                        </label>
+                    </div>
+                    <span class="error-message" id="error-epi">Selecione pelo menos um EPI obrigatório para
+                        prosseguir.</span>
+
+                    <!-- Declarations Section -->
+                    <div class="form-section-title">
+                        <i data-lucide="file-signature"></i> Declarações de Segurança
+                    </div>
+
+                    <div class="declarations-container">
+                        <!-- Declaration 9 -->
+                        <div class="declaration-item">
+                            <p class="declaration-text">
+                                <strong>9.</strong> Declaro que recebi as informações de segurança da empresa Ecogen,
+                                reconheço os riscos envolvidos no ambiente e em minha atividade, assim como as ações
+                                disciplinares contidas em situações de desvios. <span class="required">*</span>
+                            </p>
+                            <div class="declaration-options">
+                                <label class="radio-pill">
+                                    <input type="radio" name="decl_9" value="Sim" required>
+                                    <span>Sim</span>
+                                </label>
+                                <label class="radio-pill pill-danger">
+                                    <input type="radio" name="decl_9" value="Não" required>
+                                    <span>Não</span>
+                                </label>
+                            </div>
+                            <span class="error-message" id="error-decl9">Você precisa declarar estar ciente ("Sim") para
+                                obter autorização.</span>
+                        </div>
+
+                        <!-- Declaration 10 -->
+                        <div class="declaration-item">
+                            <p class="declaration-text">
+                                <strong>10.</strong> Declaro estar ciente de que não é permitido o porte de adornos
+                                (anéis, brincos, cordões, relógios, piercings) durante minha permanência dentro das
+                                instalações da Empresa Ecogen. <span class="required">*</span>
+                            </p>
+                            <div class="declaration-options">
+                                <label class="radio-pill">
+                                    <input type="radio" name="decl_10" value="Sim" required>
+                                    <span>Sim</span>
+                                </label>
+                                <label class="radio-pill pill-danger">
+                                    <input type="radio" name="decl_10" value="Não" required>
+                                    <span>Não</span>
+                                </label>
+                            </div>
+                            <span class="error-message" id="error-decl10">Você precisa declarar estar ciente ("Sim")
+                                para obter autorização.</span>
+                        </div>
+                    </div>
+                </form>
+
+                <div class="action-footer">
+                    <div class="form-warning-info text-secondary">
+                        <i data-lucide="info" class="inline-icon"></i>
+                        Quando você enviar este formulário, ele não coletará automaticamente seus dados, como nome e
+                        endereço de e-mail, a menos que você mesmo o forneça.
+                    </div>
+                    <button type="button" id="btn-to-signature" class="btn btn-primary">
+                        <span>Ir para Assinatura</span>
+                        <i data-lucide="pen-tool"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: DIGITAL SIGNATURE -->
+            <div class="step-content" id="view-signature">
+                <div class="step-header">
+                    <h2>Assinatura Digital</h2>
+                    <p>Desenhe sua assinatura no quadro abaixo. Use seu dedo (se estiver no celular) ou o mouse do
+                        computador.</p>
+                </div>
+
+                <div class="signature-area-container">
+                    <div class="signature-canvas-wrapper">
+                        <canvas id="signature-canvas"></canvas>
+                        <div class="canvas-placeholder" id="canvas-placeholder">
+                            <span>Assine aqui</span>
+                        </div>
+                    </div>
+
+                    <div class="signature-actions">
+                        <button id="btn-clear-signature" class="btn btn-secondary">
+                            <i data-lucide="trash-2"></i>
+                            <span>Limpar</span>
+                        </button>
+                        <button id="btn-undo-signature" class="btn btn-secondary">
+                            <i data-lucide="undo"></i>
+                            <span>Desfazer</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="action-footer">
+                    <p class="signature-warning">
+                        <i data-lucide="alert-circle" class="inline-icon"></i>
+                        Ao assinar, você confirma que todas as respostas fornecidas são verdadeiras e assume a
+                        responsabilidade pela segurança de suas ações nas dependências da empresa.
+                    </p>
+                    <button id="btn-generate-cert" class="btn btn-primary" disabled>
+                        <span>Gerar Certificado</span>
+                        <i data-lucide="award"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 4: CERTIFICATE VIEW -->
+            <div class="step-content" id="view-certificate">
+                <div class="step-header no-print">
+                    <h2>Integração Concluída com Sucesso!</h2>
+                    <p>Seu certificado de participação foi gerado. Você pode salvá-lo no computador ou celular.</p>
+                </div>
+
+                <!-- CERTIFICATE TO PRINT/SAVE -->
+                <div class="certificate-outer-wrapper">
+                    <div class="certificate-container" id="certificate-print-area">
+                        <!-- Standard Landscape layout (A4 Aspect Ratio) -->
+                        <div class="cert-border-gold">
+                            <div class="cert-border-inner">
+                                <div class="cert-watermark">
+                                    <i data-lucide="shield"></i>
+                                </div>
+
+                                <div class="cert-header">
+                                    <div class="cert-logo"><img style="width: 90px; " src="media/logo.png"
+                                            alt="Ecogen Brasil"></div>
+                                    <div class="cert-badge">INTEGRAÇÃO DE SEGURANÇA</div>
+                                </div>
+
+
+                                <div class="cert-body">
+                                    <h1 class="cert-title">Certificado de Participação</h1>
+                                    <p class="cert-intro">Certificamos que o colaborador/visitante</p>
+                                    <p class="cert-name" id="cert-display-name">NOME COMPLETO</p>
+                                    <p class="cert-details">
+                                        portador do CPF <strong id="cert-display-cpf">000.000.000-00</strong>,
+                                        representante da empresa <strong id="cert-display-company">Nome
+                                            Empresa</strong>,
+                                        participou e concluiu com êxito o treinamento de <strong>Integração de
+                                            Segurança, Saúde e Meio Ambiente (HSE)</strong> da unidade da Ecogen Brasil.
+                                    </p>
+                                    <p class="cert-compliance">
+                                        O portador declarou ciência e conformidade com as regras internas de segurança,
+                                        incluindo o porte de EPIs obrigatórios para o setor
+                                        <strong id="cert-display-sector">Setor</strong> e a proibição do porte de
+                                        adornos nas instalações.
+                                    </p>
+                                </div>
+
+                                <div class="cert-footer">
+                                    <div class="cert-signature-block">
+                                        <div class="cert-sig-img-wrap">
+                                            <img id="cert-signature-img" src="" alt="Assinatura Digital">
+                                        </div>
+                                        <div class="cert-sig-line"></div>
+                                        <span class="cert-sig-title">Assinatura do Participante</span>
+                                    </div>
+
+                                    <div class="cert-info-block">
+                                        <div class="cert-date" id="cert-display-date">Realizado em: --/--/---- às --:--
+                                        </div>
+                                        <div class="cert-verification" id="cert-display-hash">CÓD. VERIFICAÇÃO:
+                                            A1B2-C3D4-E5F6-G7H8</div>
+                                    </div>
+
+                                    <div class="cert-signature-block">
+                                        <div class="cert-sig-img-wrap">
+                                            <img id="cert-official-signature-img" src="media/assinatura.png"
+                                                alt="Assinatura Ecogen">
+                                        </div>
+                                        <div class="cert-sig-line"></div>
+                                        <span class="cert-sig-title">Ecogen Brasil S/A</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="action-footer no-print">
+                    <button id="btn-download-pdf" class="btn btn-primary">
+                        <i data-lucide="file-down"></i>
+                        <span>Salvar Certificado como PDF</span>
+                    </button>
+                    <button id="btn-download-png" class="btn btn-secondary">
+                        <i data-lucide="image-down"></i>
+                        <span>Baixar Imagem (PNG)</span>
+                    </button>
+                    <button id="btn-print" class="btn btn-secondary">
+                        <i data-lucide="printer"></i>
+                        <span>Imprimir Certificado</span>
+                    </button>
+                    <button id="btn-reset" class="btn btn-secondary">
+                        <i data-lucide="rotate-ccw"></i>
+                        <span>Realizar Nova Integração</span>
+                    </button>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="app-footer">
+        <p>© 2026 Ecogen Brasil. Todos os direitos reservados. Compromisso com a Vida e Segurança em Primeiro Lugar.</p>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+
+</html>
