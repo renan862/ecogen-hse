@@ -88,9 +88,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================
-    // STEP 1: Video Player & Gating Logic
     // ==========================================
-    const video = document.getElementById('hse-video');
+    // STEP 1: Video Player & Gating Logic (YouTube API)
+    // ==========================================
     const playCenterBtn = document.getElementById('play-center-btn');
     const playPauseBtn = document.getElementById('play-pause-btn');
     const timeDisplay = document.getElementById('video-time-display');
@@ -102,9 +102,85 @@ document.addEventListener('DOMContentLoaded', () => {
     const videoStatusText = document.getElementById('video-status-text');
     const videoContainer = document.querySelector('.video-container');
 
+    let player;
+    let updateInterval;
     let lastTime = 0;
     let isMuted = false;
     let savedVolume = 1;
+
+    // A API do YouTube requer uma função global onYouTubeIframeAPIReady
+    window.onYouTubeIframeAPIReady = function() {
+        player = new YT.Player('hse-video', {
+            videoId: 'bX831WFoyEc',
+            playerVars: {
+                'autoplay': 0,
+                'controls': 0,       // Esconde controles padrão do YouTube
+                'disablekb': 1,      // Desativa atalhos de teclado do YT
+                'fs': 0,             // Desativa botão fullscreen padrão do YT
+                'modestbranding': 1, // Logo minimalista do YT
+                'rel': 0,            // Não sugere outros vídeos ao final
+                'showinfo': 0,
+                'iv_load_policy': 3, // Oculta anotações
+                'cc_load_policy': 0, // Desativa legendas por padrão
+                'playsinline': 1
+            },
+            events: {
+                'onReady': onPlayerReady,
+                'onStateChange': onPlayerStateChange
+            }
+        });
+    };
+
+    function onPlayerReady(event) {
+        updateVideoTime();
+        // Inicializa o volume com base no slider
+        player.setVolume(parseFloat(volumeSlider.value) * 100);
+    }
+
+    function onPlayerStateChange(event) {
+        // YT.PlayerState.PLAYING = 1
+        if (event.data === YT.PlayerState.PLAYING) {
+            videoContainer.classList.add('playing');
+            playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
+            lucide.createIcons();
+            
+            // Monitora o tempo atual do vídeo a cada 250ms
+            clearInterval(updateInterval);
+            updateInterval = setInterval(monitorPlayback, 250);
+        } else {
+            videoContainer.classList.remove('playing');
+            playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
+            lucide.createIcons();
+            clearInterval(updateInterval);
+        }
+
+        // YT.PlayerState.ENDED = 0
+        if (event.data === YT.PlayerState.ENDED) {
+            state.videoWatched = true;
+            btnToQuestions.disabled = false;
+            videoStatusText.style.color = 'var(--color-primary)';
+            videoStatusText.innerHTML = '<i data-lucide="check-circle" class="inline-icon"></i> Vídeo de integração concluído com sucesso! Prossiga para o questionário.';
+            lucide.createIcons();
+            clearInterval(updateInterval);
+        }
+    }
+
+    // Monitoramento para evitar que o usuário pule para frente (Anti-seeking)
+    function monitorPlayback() {
+        if (!player || typeof player.getCurrentTime !== 'function') return;
+        const currentTime = player.getCurrentTime();
+
+        // Tolerância de 2.0 segundos contra lag de buffer do próprio YouTube
+        if (currentTime > lastTime + 2.0) {
+            // Usuário tentou avançar o vídeo! Retorna ao último ponto assistido
+            player.seekTo(lastTime, true);
+        } else {
+            // Avanço normal ou retrocesso
+            lastTime = currentTime;
+        }
+
+        updateVideoTime();
+    }
 
     // Format seconds to MM:SS
     function formatTime(seconds) {
@@ -115,47 +191,50 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Update time displays
     function updateVideoTime() {
-        if (!isNaN(video.duration)) {
-            timeDisplay.textContent = `${formatTime(video.currentTime)} / ${formatTime(video.duration)}`;
-            const pct = (video.currentTime / video.duration) * 100;
-            progressFill.style.width = `${pct}%`;
+        if (player && typeof player.getCurrentTime === 'function') {
+            const currentTime = player.getCurrentTime();
+            const duration = player.getDuration() || 0;
+            timeDisplay.textContent = `${formatTime(currentTime)} / ${formatTime(duration)}`;
+            if (duration > 0) {
+                const pct = (currentTime / duration) * 100;
+                progressFill.style.width = `${pct}%`;
+            }
         }
     }
-
-    // Check duration and update immediately when metadata is loaded
-    video.addEventListener('loadedmetadata', updateVideoTime);
 
     // Play/Pause Action
     function togglePlay() {
-        if (video.paused) {
-            video.play();
+        if (!player || typeof player.getPlayerState !== 'function') return;
+        const playerState = player.getPlayerState();
+        if (playerState === YT.PlayerState.PLAYING) {
+            player.pauseVideo();
         } else {
-            video.pause();
+            player.playVideo();
         }
     }
 
-    video.addEventListener('play', () => {
-        videoContainer.classList.add('playing');
-        playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
-        lucide.createIcons();
-    });
-
-    video.addEventListener('pause', () => {
-        videoContainer.classList.remove('playing');
-        playPauseBtn.innerHTML = '<i data-lucide="play"></i>';
-        lucide.createIcons();
-    });
+    // Vincula cliques para Play/Pause
+    playCenterBtn.addEventListener('click', togglePlay);
+    playPauseBtn.addEventListener('click', togglePlay);
+    
+    // O overlay cobrindo o iframe intercepta cliques para Play/Pause
+    const controlsOverlay = document.querySelector('.video-controls-overlay');
+    if (controlsOverlay) {
+        controlsOverlay.addEventListener('click', togglePlay);
+    }
 
     // Mute/Volume controls
     function toggleMute() {
-        if (isMuted) {
-            video.volume = savedVolume;
+        if (!player || typeof player.isMuted !== 'function') return;
+        if (player.isMuted()) {
+            player.unMute();
+            player.setVolume(savedVolume * 100);
             volumeSlider.value = savedVolume;
             muteBtn.innerHTML = '<i data-lucide="volume-2"></i>';
             isMuted = false;
         } else {
-            savedVolume = video.volume;
-            video.volume = 0;
+            savedVolume = parseFloat(volumeSlider.value);
+            player.mute();
             volumeSlider.value = 0;
             muteBtn.innerHTML = '<i data-lucide="volume-x"></i>';
             isMuted = true;
@@ -163,17 +242,23 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 
+    muteBtn.addEventListener('click', toggleMute);
+
     volumeSlider.addEventListener('input', (e) => {
         const vol = parseFloat(e.target.value);
-        video.volume = vol;
-        if (vol === 0) {
-            muteBtn.innerHTML = '<i data-lucide="volume-x"></i>';
-            isMuted = true;
-        } else {
-            muteBtn.innerHTML = vol < 0.5 ? '<i data-lucide="volume-1"></i>' : '<i data-lucide="volume-2"></i>';
-            isMuted = false;
+        if (player && typeof player.setVolume === 'function') {
+            player.setVolume(vol * 100);
+            if (vol === 0) {
+                player.mute();
+                muteBtn.innerHTML = '<i data-lucide="volume-x"></i>';
+                isMuted = true;
+            } else {
+                player.unMute();
+                muteBtn.innerHTML = vol < 0.5 ? '<i data-lucide="volume-1"></i>' : '<i data-lucide="volume-2"></i>';
+                isMuted = false;
+            }
+            lucide.createIcons();
         }
-        lucide.createIcons();
     });
 
     // Fullscreen control
@@ -187,48 +272,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-    // Connect control events
-    playCenterBtn.addEventListener('click', togglePlay);
-    playPauseBtn.addEventListener('click', togglePlay);
-    video.addEventListener('click', togglePlay);
-    muteBtn.addEventListener('click', toggleMute);
     fullscreenBtn.addEventListener('click', toggleFullscreen);
-
-    // ANTI-SEEKING GATING LOGIC:
-    // Prevents the user from fast forwarding. If they attempt to skip ahead,
-    // they are forced back to their furthest watched point.
-    video.addEventListener('timeupdate', () => {
-        const currentTime = video.currentTime;
-
-        // Tolerance threshold of 1.5 seconds prevents minor timing inaccuracies from triggering gating
-        if (currentTime > lastTime + 1.5) {
-            // User skipped ahead! Revert to last watched position
-            video.currentTime = lastTime;
-        } else {
-            // User playing normally or seeking backwards (backward is allowed)
-            lastTime = currentTime;
-        }
-
-        updateVideoTime();
-    });
-
-    // Reset last time track when user seeks back manually
-    video.addEventListener('seeking', () => {
-        const currentTime = video.currentTime;
-        if (currentTime > lastTime) {
-            // Attempt to jump forward detected during seeking event
-            video.currentTime = lastTime;
-        }
-    });
-
-    // Video Finished
-    video.addEventListener('ended', () => {
-        state.videoWatched = true;
-        btnToQuestions.disabled = false;
-        videoStatusText.style.color = 'var(--color-primary)';
-        videoStatusText.innerHTML = '<i data-lucide="check-circle" class="inline-icon"></i> Vídeo de integração concluído com sucesso! Prossiga para o questionário.';
-        lucide.createIcons();
-    });
 
     btnToQuestions.addEventListener('click', () => {
         if (state.videoWatched) {
@@ -318,8 +362,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Reset Video watch state
         state.videoWatched = false;
         lastTime = 0;
-        video.currentTime = 0;
-        video.pause();
+        if (player && typeof player.stopVideo === 'function') {
+            player.stopVideo();
+            player.seekTo(0, true);
+        }
         progressFill.style.width = '0%';
         btnToQuestions.disabled = true;
         videoStatusText.style.color = 'var(--color-text-light)';
@@ -968,8 +1014,11 @@ document.addEventListener('DOMContentLoaded', () => {
             lastTime = 0;
 
             // Reset player positions
-            video.currentTime = 0;
-            video.pause();
+            lastTime = 0;
+            if (player && typeof player.stopVideo === 'function') {
+                player.stopVideo();
+                player.seekTo(0, true);
+            }
             progressFill.style.width = '0%';
             btnToQuestions.disabled = true;
             videoStatusText.style.color = 'var(--color-text-light)';
