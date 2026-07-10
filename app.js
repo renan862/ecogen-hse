@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // A API do YouTube requer uma função global onYouTubeIframeAPIReady
     window.onYouTubeIframeAPIReady = function () {
         player = new YT.Player('hse-video', {
-            videoId: 'HqzmLO4Pi7A',
+            videoId: 'bX831WFoyEc',
             playerVars: {
                 'autoplay': 0,
                 'controls': 0,       // Esconde controles padrão do YouTube
@@ -853,14 +853,108 @@ document.addEventListener('DOMContentLoaded', () => {
         // Navegar para o passo 5 (exibindo o certificado na tela e tornando o DOM visível)
         navigateToStep(5);
 
-        // Enviar imagem e PDF para o Telegram (aguarda a renderização física do elemento na tela para o html2canvas capturar)
+        // Enviar imagem e PDF para o Telegram (aguarda a renderização física do elemento na tela)
         setTimeout(() => {
             const certElement = document.getElementById('certificate-print-area');
             sendToTelegram(certElement, data, dateStr, timeStr, verificationCode);
-        }, 500);
+        }, 1000);
 
         // Auto-download PNG após o elemento estar totalmente desenhado
-        setTimeout(() => downloadCertificateAsPng(), 800);
+        setTimeout(() => downloadCertificateAsPng(), 1500);
+    }
+
+    // ==========================================
+    // CERTIFICATE CAPTURE HELPER (Screen-independent)
+    // ==========================================
+
+    /**
+     * Clona o certificado para um container off-screen com dimensões fixas A4 paisagem,
+     * garantindo que a captura seja idêntica independente do tamanho da tela do dispositivo.
+     * Retorna um canvas HTML já renderizado em alta resolução (2x).
+     */
+    async function captureCertificateCanvas() {
+        const certElement = document.getElementById('certificate-print-area');
+        if (!certElement) throw new Error('Elemento do certificado não encontrado.');
+
+        // Dimensões fixas do certificado A4 paisagem em pixels (72dpi)
+        const CERT_W = 842;
+        const CERT_H = 595;
+
+        // 1. Cria um container off-screen com dimensões fixas
+        const offscreen = document.createElement('div');
+        offscreen.style.cssText = `
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: ${CERT_W}px;
+            height: ${CERT_H}px;
+            overflow: hidden;
+            z-index: -9999;
+            background: #FFFFFF;
+            pointer-events: none;
+        `;
+
+        // 2. Clona o certificado inteiro (incluindo imagens e estilos inline)
+        const clone = certElement.cloneNode(true);
+        clone.removeAttribute('id'); // Evita IDs duplicados
+
+        // Força dimensões fixas no clone para garantir consistência
+        clone.style.cssText = `
+            width: ${CERT_W}px !important;
+            height: ${CERT_H}px !important;
+            min-width: ${CERT_W}px !important;
+            min-height: ${CERT_H}px !important;
+            max-width: ${CERT_W}px !important;
+            max-height: ${CERT_H}px !important;
+            padding: 30px !important;
+            box-sizing: border-box !important;
+            background-color: #FFFFFF !important;
+            box-shadow: none !important;
+            position: relative !important;
+            display: block !important;
+            transform: none !important;
+            margin: 0 !important;
+            flex-shrink: 0 !important;
+            overflow: hidden !important;
+        `;
+
+        offscreen.appendChild(clone);
+        document.body.appendChild(offscreen);
+
+        // 3. Aguarda todas as imagens do clone carregarem
+        const images = clone.querySelectorAll('img');
+        const imagePromises = Array.from(images).map(img => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+            return new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve; // Não bloqueia se uma imagem falhar
+                // Timeout de segurança para não travar indefinidamente
+                setTimeout(resolve, 3000);
+            });
+        });
+        await Promise.all(imagePromises);
+
+        // 4. Pequeno delay para garantir renderização completa do layout
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 5. Captura com html2canvas usando o clone off-screen (viewport fixo)
+        try {
+            const capturedCanvas = await html2canvas(clone, {
+                scale: 2,
+                backgroundColor: '#FFFFFF',
+                useCORS: true,
+                logging: false,
+                allowTaint: false,
+                width: CERT_W,
+                height: CERT_H,
+                windowWidth: CERT_W + 100,
+                windowHeight: CERT_H + 100
+            });
+            return capturedCanvas;
+        } finally {
+            // 6. Remove o container off-screen do DOM
+            document.body.removeChild(offscreen);
+        }
     }
 
     /**
@@ -879,36 +973,28 @@ document.addEventListener('DOMContentLoaded', () => {
         const filenamePdf = `${nameClean}-${cpfClean}.pdf`;
         const filenamePng = `${nameClean}-${cpfClean}.png`;
 
-        const opt = {
-            margin: 0,
-            filename: filenamePdf,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                letterRendering: true
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
-
         try {
-            // 1. Gera a imagem PNG do certificado do participante
-            const canvas = await html2canvas(certElement, {
-                scale: 2,
-                backgroundColor: '#FFFFFF',
-                useCORS: true,
-                logging: false,
-                allowTaint: false
-            });
-            const pngBase64 = canvas.toDataURL('image/png').split(',')[1];
+            // 1. Captura a imagem do certificado de forma independente de tela
+            const capturedCanvas = await captureCertificateCanvas();
+            const pngDataUrl = capturedCanvas.toDataURL('image/png');
+            const pngBase64 = pngDataUrl.split(',')[1];
 
-            // 2. Gera o PDF do certificado do participante (aguarda a finalização para evitar conflitos concorrentes de DOM/canvas)
-            const pdfDataUri = await html2pdf().from(certElement).set(opt).output('datauristring');
-            const pdfBase64 = pdfDataUri.split(',')[1];
+            // 2. Cria o PDF a partir da imagem JPEG comprimida (reduz de ~7MB para ~300KB)
+            const jpegDataUrl = capturedCanvas.toDataURL('image/jpeg', 0.92);
+            const jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'pt',
+                format: 'a4'
+            });
+
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            pdf.addImage(jpegDataUrl, 'JPEG', 0, 0, pageW, pageH);
+            const pdfBase64 = pdf.output('datauristring').split(',')[1];
 
             console.log('[Telegram Debug] PNG base64 length:', pngBase64 ? pngBase64.length : 'undefined');
-            console.log('[Telegram Debug] PDF base64 length:', pdfDataUri ? pdfBase64.length : 'undefined');
+            console.log('[Telegram Debug] PDF base64 length:', pdfBase64 ? pdfBase64.length : 'undefined');
 
             // 3. Envia ambos em Base64 para o backend
             const response = await fetch('/api/send-telegram', {
@@ -945,11 +1031,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Captures the certificate element as a PNG and triggers browser download.
-     * Uses html2canvas (loaded separately) for reliable rendering.
+     * Uses the off-screen clone approach for consistent rendering across devices.
      */
     async function downloadCertificateAsPng(filename) {
-        const certElement = document.getElementById('certificate-print-area');
-        if (!certElement) return;
+        if (!state.formData) return;
 
         // Build filename from formData if not provided
         if (!filename) {
@@ -963,15 +1048,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         try {
-            const canvas = await html2canvas(certElement, {
-                scale: 2,
-                backgroundColor: '#FFFFFF',
-                useCORS: true,
-                logging: false,
-                allowTaint: false
-            });
+            const capturedCanvas = await captureCertificateCanvas();
 
-            canvas.toBlob((blob) => {
+            capturedCanvas.toBlob((blob) => {
                 if (!blob) return;
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -989,11 +1068,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     /**
      * Gera e salva o certificado diretamente como um arquivo PDF em formato A4 Paisagem (Landscape).
-     * Utiliza a biblioteca html2pdf.js importada no index.html.
+     * Usa a captura off-screen para garantir layout perfeito em qualquer dispositivo.
      */
-    function downloadCertificateAsPdf() {
-        const certElement = document.getElementById('certificate-print-area');
-        if (!certElement) return;
+    async function downloadCertificateAsPdf() {
+        if (!state.formData) return;
 
         const cpfClean = (state.formData?.cpf || '').replace(/\D/g, '');
         const nameClean = (state.formData?.name || 'certificado')
@@ -1003,21 +1081,25 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/-+/g, '-');
         const filename = `${nameClean}-${cpfClean}.pdf`;
 
-        const opt = {
-            margin: 0,
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: {
-                scale: 2,
-                useCORS: true,
-                logging: false,
-                letterRendering: true
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
+        try {
+            const capturedCanvas = await captureCertificateCanvas();
 
-        // Executa a conversão e o download do arquivo PDF
-        html2pdf().from(certElement).set(opt).save();
+            // Cria o PDF a partir da imagem JPEG comprimida (~300KB em vez de ~7MB)
+            const jpegDataUrl = capturedCanvas.toDataURL('image/jpeg', 0.92);
+            const jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'pt',
+                format: 'a4'
+            });
+
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            pdf.addImage(jpegDataUrl, 'JPEG', 0, 0, pageW, pageH);
+            pdf.save(filename);
+        } catch (err) {
+            console.error('Erro ao baixar certificado em PDF:', err);
+        }
     }
 
 

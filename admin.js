@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnExportExcel = document.getElementById('btn-export-excel');
     const tableBody = document.getElementById('table-body');
     const emptyState = document.getElementById('empty-state');
-    
+
     // Stats Elements
     const statTotal = document.getElementById('stat-total');
     const statToday = document.getElementById('stat-today');
@@ -103,10 +103,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         rows.forEach(row => {
             const tr = document.createElement('tr');
-            
+
             // Badges configurations
             const reasonBadgeClass = row.reason === 'Visita' ? 'visit' : 'service';
-            
+
             tr.innerHTML = `
                 <td class="reg-date">${row.dateTime || '-'}</td>
                 <td class="reg-name">${row.name || '-'}</td>
@@ -145,8 +145,100 @@ document.addEventListener('DOMContentLoaded', () => {
         lucide.createIcons();
     }
 
+    // ==========================================
+    // CERTIFICATE CAPTURE HELPER (Screen-independent)
+    // ==========================================
+
+    /**
+     * Clona o certificado para um container off-screen com dimensões fixas A4 paisagem,
+     * garantindo que a captura seja idêntica independente do tamanho da tela do administrador.
+     * Retorna um canvas HTML já renderizado em alta resolução (2x).
+     */
+    async function captureCertificateCanvas() {
+        const certElement = document.getElementById('certificate-print-area');
+        if (!certElement) throw new Error('Elemento do certificado não encontrado.');
+
+        const CERT_W = 842;
+        const CERT_H = 595;
+
+        // 1. Cria um container off-screen com dimensões fixas
+        const offscreen = document.createElement('div');
+        offscreen.style.cssText = `
+            position: fixed;
+            left: -9999px;
+            top: 0;
+            width: ${CERT_W}px;
+            height: ${CERT_H}px;
+            overflow: hidden;
+            z-index: -9999;
+            background: #FFFFFF;
+            pointer-events: none;
+        `;
+
+        // 2. Clona o certificado inteiro (incluindo imagens e estilos inline)
+        const clone = certElement.cloneNode(true);
+        clone.removeAttribute('id');
+
+        // Força dimensões fixas no clone para garantir consistência
+        clone.style.cssText = `
+            width: ${CERT_W}px !important;
+            height: ${CERT_H}px !important;
+            min-width: ${CERT_W}px !important;
+            min-height: ${CERT_H}px !important;
+            max-width: ${CERT_W}px !important;
+            max-height: ${CERT_H}px !important;
+            padding: 30px !important;
+            box-sizing: border-box !important;
+            background-color: #FFFFFF !important;
+            box-shadow: none !important;
+            position: relative !important;
+            display: block !important;
+            transform: none !important;
+            margin: 0 !important;
+            flex-shrink: 0 !important;
+            overflow: hidden !important;
+        `;
+
+        offscreen.appendChild(clone);
+        document.body.appendChild(offscreen);
+
+        // 3. Aguarda todas as imagens do clone carregarem (assinaturas, etc.)
+        const images = clone.querySelectorAll('img');
+        const imagePromises = Array.from(images).map(img => {
+            if (img.complete && img.naturalWidth > 0) return Promise.resolve();
+            return new Promise((resolve) => {
+                img.onload = resolve;
+                img.onerror = resolve;
+                setTimeout(resolve, 3000);
+            });
+        });
+        await Promise.all(imagePromises);
+
+        // 4. Pequeno delay para garantir renderização completa do layout
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // 5. Captura com html2canvas usando o clone off-screen
+        try {
+            const capturedCanvas = await html2canvas(clone, {
+                scale: 2,
+                backgroundColor: '#FFFFFF',
+                useCORS: true,
+                logging: false,
+                allowTaint: false,
+                width: CERT_W,
+                height: CERT_H,
+                windowWidth: CERT_W + 100,
+                windowHeight: CERT_H + 100
+            });
+            return capturedCanvas;
+        } finally {
+            // 6. Remove o container do DOM
+            document.body.removeChild(offscreen);
+        }
+    }
+
     // Gera e salva o PDF do certificado a partir dos dados da linha
-    function generateCertificateFromRow(row) {
+    async function generateCertificateFromRow(row) {
         const certDisplayName = document.getElementById('cert-display-name');
         const certDisplayCpf = document.getElementById('cert-display-cpf');
         const certDisplayCompany = document.getElementById('cert-display-company');
@@ -164,7 +256,7 @@ document.addEventListener('DOMContentLoaded', () => {
         certDisplaySector.textContent = row.sector;
         certDisplayDate.textContent = `Realizado em: ${row.dateTime}`;
         certDisplayHash.textContent = `CÓD. VERIFICAÇÃO: ${row.verificationCode}`;
-        
+
         // Tratamento da assinatura do participante:
         if (row.signature && row.signature.trim() !== '') {
             // Exibe a assinatura original que o usuário desenhou no canvas
@@ -180,8 +272,6 @@ document.addEventListener('DOMContentLoaded', () => {
             certSignatureText.textContent = '';
         }
 
-        const certElement = document.getElementById('certificate-print-area');
-        
         const cpfClean = (row.cpf || '').replace(/\D/g, '');
         const nameClean = (row.name || 'certificado')
             .toLowerCase()
@@ -190,20 +280,29 @@ document.addEventListener('DOMContentLoaded', () => {
             .replace(/-+/g, '-');
         const filename = `certificado-${nameClean}-${cpfClean}.pdf`;
 
-        const opt = {
-            margin: 0,
-            filename: filename,
-            image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2, 
-                useCORS: true, 
-                logging: false,
-                letterRendering: true
-            },
-            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
-        };
+        // Pequeno delay para garantir que a imagem de assinatura carregue no DOM visível antes de clonar
+        await new Promise(resolve => setTimeout(resolve, 300));
 
-        html2pdf().from(certElement).set(opt).save();
+        try {
+            // 1. Captura a imagem do certificado de forma independente de tela
+            const capturedCanvas = await captureCertificateCanvas();
+
+            // 2. Cria o PDF a partir da imagem JPEG comprimida (~300KB em vez de ~7MB)
+            const jpegDataUrl = capturedCanvas.toDataURL('image/jpeg', 0.92);
+            const jsPDF = window.jspdf ? window.jspdf.jsPDF : window.jsPDF;
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'pt',
+                format: 'a4'
+            });
+
+            const pageW = pdf.internal.pageSize.getWidth();
+            const pageH = pdf.internal.pageSize.getHeight();
+            pdf.addImage(jpegDataUrl, 'JPEG', 0, 0, pageW, pageH);
+            pdf.save(filename);
+        } catch (err) {
+            console.error('Erro ao gerar PDF do certificado no admin:', err);
+        }
     }
 
     // Deletar registro do banco de dados
@@ -276,7 +375,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Generate filename with date suffix
         const dateSuffix = new Date().toISOString().slice(0, 10);
-        
+
         // Write file and trigger download
         XLSX.writeFile(workbook, `integracoes-hse-${dateSuffix}.xlsx`);
     }

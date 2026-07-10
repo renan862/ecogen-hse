@@ -13,7 +13,9 @@
     <link rel="stylesheet" href="style.css">
     <!-- html2canvas for certificate image capture -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <!-- html2pdf.js for generating PDF client-side -->
+    <!-- jsPDF standalone for generating PDF from image -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- html2pdf.js for legacy PDF generation (optional fallback) -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- Lucide Icons for premium visual cues -->
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -666,10 +668,10 @@
                 </div>
 
                 <div class="action-footer no-print">
-                    <!--<button id="btn-download-pdf" class="btn btn-primary">
+                    <button id="btn-download-pdf" class="btn btn-primary">
                         <i data-lucide="file-down"></i>
                         <span>Salvar Certificado como PDF</span>
-                    </button>-->
+                    </button>
                     <button id="btn-download-png" class="btn btn-secondary">
                         <i data-lucide="image-down"></i>
                         <span>Baixar Imagem (PNG)</span>
