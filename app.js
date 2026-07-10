@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // A API do YouTube requer uma função global onYouTubeIframeAPIReady
     window.onYouTubeIframeAPIReady = function () {
         player = new YT.Player('hse-video', {
-            videoId: 'bX831WFoyEc',
+            videoId: 'HqzmLO4Pi7A',
             playerVars: {
                 'autoplay': 0,
                 'controls': 0,       // Esconde controles padrão do YouTube
@@ -160,7 +160,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     player.unloadModule('captions');
                     player.unloadModule('cc');
                 }
-            } catch (e) {}
+            } catch (e) { }
 
             // Monitora o tempo atual do vídeo a cada 250ms
             clearInterval(updateInterval);
@@ -850,21 +850,23 @@ document.addEventListener('DOMContentLoaded', () => {
         // Enviar os dados para o servidor local (incluindo a assinatura em base64)
         sendToLocalServer(data, `${dateStr} ${timeStr}`, verificationCode, dataURL);
 
-        // Enviar o PDF para o Telegram
-        const certElement = document.getElementById('certificate-print-area');
-        sendPdfToTelegram(certElement, data, dateStr, timeStr, verificationCode);
-
-        // Proceed navigation (Step 5 is Certificate)
+        // Navegar para o passo 5 (exibindo o certificado na tela e tornando o DOM visível)
         navigateToStep(5);
 
-        // Auto-download PNG after element is fully painted
+        // Enviar imagem e PDF para o Telegram (aguarda a renderização física do elemento na tela para o html2canvas capturar)
+        setTimeout(() => {
+            const certElement = document.getElementById('certificate-print-area');
+            sendToTelegram(certElement, data, dateStr, timeStr, verificationCode);
+        }, 500);
+
+        // Auto-download PNG após o elemento estar totalmente desenhado
         setTimeout(() => downloadCertificateAsPng(), 800);
     }
 
     /**
-     * Gera o PDF e envia para o backend salvar e repassar para o Telegram.
+     * Gera a imagem PNG e o PDF do certificado, e envia para o backend repassar para o Telegram.
      */
-    function sendPdfToTelegram(certElement, data, dateStr, timeStr, verificationCode) {
+    async function sendToTelegram(certElement, data, dateStr, timeStr, verificationCode) {
         if (!certElement) return;
 
         const cpfClean = (data.cpf || '').replace(/\D/g, '');
@@ -873,11 +875,13 @@ document.addEventListener('DOMContentLoaded', () => {
             .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
             .replace(/[^a-z0-9]/g, '-')
             .replace(/-+/g, '-');
-        const filename = `${nameClean}-${cpfClean}.pdf`;
+
+        const filenamePdf = `${nameClean}-${cpfClean}.pdf`;
+        const filenamePng = `${nameClean}-${cpfClean}.png`;
 
         const opt = {
             margin: 0,
-            filename: filename,
+            filename: filenamePdf,
             image: { type: 'jpeg', quality: 0.98 },
             html2canvas: {
                 scale: 2,
@@ -888,18 +892,35 @@ document.addEventListener('DOMContentLoaded', () => {
             jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
         };
 
-        // Converte o certificado em datauristring e envia para o servidor local
-        html2pdf().from(certElement).set(opt).output('datauristring').then(function (pdfDataUri) {
-            const base64Data = pdfDataUri.split(',')[1];
+        try {
+            // 1. Gera a imagem PNG do certificado do participante
+            const canvas = await html2canvas(certElement, {
+                scale: 2,
+                backgroundColor: '#FFFFFF',
+                useCORS: true,
+                logging: false,
+                allowTaint: false
+            });
+            const pngBase64 = canvas.toDataURL('image/png').split(',')[1];
 
-            fetch('/api/send-telegram', {
+            // 2. Gera o PDF do certificado do participante (aguarda a finalização para evitar conflitos concorrentes de DOM/canvas)
+            const pdfDataUri = await html2pdf().from(certElement).set(opt).output('datauristring');
+            const pdfBase64 = pdfDataUri.split(',')[1];
+
+            console.log('[Telegram Debug] PNG base64 length:', pngBase64 ? pngBase64.length : 'undefined');
+            console.log('[Telegram Debug] PDF base64 length:', pdfDataUri ? pdfBase64.length : 'undefined');
+
+            // 3. Envia ambos em Base64 para o backend
+            const response = await fetch('/api/send-telegram', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    pdfBase64: base64Data,
-                    filename: filename,
+                    pdfBase64: pdfBase64,
+                    pngBase64: pngBase64,
+                    filenamePdf: filenamePdf,
+                    filenamePng: filenamePng,
                     name: data.name,
                     cpf: data.cpf,
                     company: data.company,
@@ -907,11 +928,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     dateTime: `${dateStr} ${timeStr}`,
                     verificationCode: verificationCode
                 })
-            })
-                .then(res => res.json())
-                .then(res => console.log('[Telegram] Resposta do envio:', res))
-                .catch(err => console.error('[Telegram] Erro ao enviar para o Telegram:', err));
-        });
+            });
+
+            const res = await response.json();
+            console.log('[Telegram] Resposta do envio:', res);
+        } catch (err) {
+            console.error('Erro ao gerar certificado para o Telegram:', err);
+        }
     }
 
     // ==========================================
@@ -997,11 +1020,17 @@ document.addEventListener('DOMContentLoaded', () => {
         html2pdf().from(certElement).set(opt).save();
     }
 
+
+
     // "Salvar como PDF" button
-    btnDownloadPdf.addEventListener('click', downloadCertificateAsPdf);
+    if (btnDownloadPdf) {
+        btnDownloadPdf.addEventListener('click', downloadCertificateAsPdf);
+    }
 
     // "Baixar PNG" button
-    btnDownloadPng.addEventListener('click', () => downloadCertificateAsPng());
+    if (btnDownloadPng) {
+        btnDownloadPng.addEventListener('click', () => downloadCertificateAsPng());
+    }
 
     // Native Browser Print trigger
     // We move the certificate to be a direct child of <body> before printing so
@@ -1028,52 +1057,56 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    btnPrint.addEventListener('click', () => {
-        window.print();
-    });
+    if (btnPrint) {
+        btnPrint.addEventListener('click', () => {
+            window.print();
+        });
+    }
 
     // Restart Integration Flow
-    btnReset.addEventListener('click', () => {
-        if (confirm('Deseja reiniciar a integração? Você precisará preencher os dados novamente.')) {
-            // Reset state
-            state.videoWatched = false;
-            state.quizPassed = false;
-            state.formData = null;
-            state.signatureDrawings = [];
-            lastTime = 0;
+    if (btnReset) {
+        btnReset.addEventListener('click', () => {
+            if (confirm('Deseja reiniciar a integração? Você precisará preencher os dados novamente.')) {
+                // Reset state
+                state.videoWatched = false;
+                state.quizPassed = false;
+                state.formData = null;
+                state.signatureDrawings = [];
+                lastTime = 0;
 
-            // Reset player positions
-            lastTime = 0;
-            if (player && typeof player.stopVideo === 'function') {
-                player.stopVideo();
-                player.seekTo(0, true);
+                // Reset player positions
+                lastTime = 0;
+                if (player && typeof player.stopVideo === 'function') {
+                    player.stopVideo();
+                    player.seekTo(0, true);
+                }
+                progressFill.style.width = '0%';
+                btnToQuestions.disabled = true;
+                videoStatusText.style.color = 'var(--color-text-light)';
+                videoStatusText.innerHTML = '<i data-lucide="info" class="inline-icon"></i> O formulário será desbloqueado automaticamente ao concluir o vídeo. Não é permitido avançar a gravação.';
+
+                // Reset Quiz fields
+                quizForm.reset();
+                quizResultArea.style.display = 'none';
+                btnQuizRetryVideo.style.display = 'none';
+                btnQuizRetry.style.display = 'none';
+                btnQuizToQuestions.style.display = 'none';
+                btnSubmitQuiz.style.display = 'inline-flex';
+                errorQuiz.style.display = 'none';
+
+                // Reset Form fields
+                form.reset();
+                form.querySelectorAll('.form-group, .declaration-item, .epi-grid').forEach(el => {
+                    el.classList.remove('has-error');
+                });
+                form.querySelectorAll('.error-message').forEach(el => {
+                    el.style.display = 'none';
+                });
+
+                // Back to step 1
+                navigateToStep(1);
             }
-            progressFill.style.width = '0%';
-            btnToQuestions.disabled = true;
-            videoStatusText.style.color = 'var(--color-text-light)';
-            videoStatusText.innerHTML = '<i data-lucide="info" class="inline-icon"></i> O formulário será desbloqueado automaticamente ao concluir o vídeo. Não é permitido avançar a gravação.';
-
-            // Reset Quiz fields
-            quizForm.reset();
-            quizResultArea.style.display = 'none';
-            btnQuizRetryVideo.style.display = 'none';
-            btnQuizRetry.style.display = 'none';
-            btnQuizToQuestions.style.display = 'none';
-            btnSubmitQuiz.style.display = 'inline-flex';
-            errorQuiz.style.display = 'none';
-
-            // Reset Form fields
-            form.reset();
-            form.querySelectorAll('.form-group, .declaration-item, .epi-grid').forEach(el => {
-                el.classList.remove('has-error');
-            });
-            form.querySelectorAll('.error-message').forEach(el => {
-                el.style.display = 'none';
-            });
-
-            // Back to step 1
-            navigateToStep(1);
-        }
-    });
+        });
+    }
 
 });

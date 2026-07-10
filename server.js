@@ -169,25 +169,30 @@ app.delete('/api/registrations/:id', (req, res) => {
 });
 
 
-// Rota POST para enviar o certificado em PDF para o Telegram
+// Rota POST para enviar o certificado em Imagem (PNG) e PDF para o Telegram
 app.post('/api/send-telegram', async (req, res) => {
   try {
-    const { pdfBase64, filename, name, cpf, company, sector, dateTime, verificationCode } = req.body;
+    const { 
+      pdfBase64, 
+      pngBase64, 
+      filenamePdf, 
+      filenamePng, 
+      name, 
+      cpf, 
+      company, 
+      sector, 
+      dateTime, 
+      verificationCode 
+    } = req.body;
 
-    if (!pdfBase64 || !filename) {
-      return res.status(400).json({ status: 'error', message: 'PDF ausente.' });
+    if (!pdfBase64 || !pngBase64 || !filenamePdf || !filenamePng) {
+      return res.status(400).json({ status: 'error', message: 'PDF ou Imagem ausente.' });
     }
 
     if (TELEGRAM_BOT_TOKEN === 'SUA_TOKEN_DO_TELEGRAM_AQUI') {
       console.warn('[Telegram] Token do bot não configurado. Ignorando envio.');
       return res.json({ status: 'warning', message: 'Token do bot do Telegram não está configurado.' });
     }
-
-    // Converte a string base64 do PDF em um buffer binário
-    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
-
-    // Cria o objeto File do Fetch API para envio como documento
-    const file = new File([pdfBuffer], filename, { type: 'application/pdf' });
 
     // Mensagem formatada em Markdown para o Telegram
     const caption = `🔔 *Integração HSE Concluída*\n\n` +
@@ -198,32 +203,53 @@ app.post('/api/send-telegram', async (req, res) => {
                     `📅 *Concluído em:* ${dateTime}\n` +
                     `🔑 *Cód. Verificação:* ${verificationCode}`;
 
-    // Constrói o FormData para envio multipart/form-data
-    const formData = new FormData();
-    formData.append('chat_id', TELEGRAM_CHAT_ID);
-    formData.append('document', file);
-    formData.append('caption', caption);
-    formData.append('parse_mode', 'Markdown');
+    // 1. Envia a imagem do certificado como Foto (com legenda)
+    const photoBuffer = Buffer.from(pngBase64, 'base64');
+    const photoFile = new File([photoBuffer], filenamePng, { type: 'image/png' });
 
-    console.log(`[Telegram] Enviando documento do certificado para o chat ${TELEGRAM_CHAT_ID}...`);
+    const photoFormData = new FormData();
+    photoFormData.append('chat_id', TELEGRAM_CHAT_ID);
+    photoFormData.append('photo', photoFile);
+    photoFormData.append('caption', caption);
+    photoFormData.append('parse_mode', 'Markdown');
 
-    const telegramRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
+    console.log(`[Telegram] Enviando imagem do certificado para o chat ${TELEGRAM_CHAT_ID}...`);
+    const photoRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendPhoto`, {
       method: 'POST',
-      body: formData
+      body: photoFormData
     });
 
-    const telegramData = await telegramRes.json();
-
-    if (!telegramRes.ok || !telegramData.ok) {
-      console.error('[Telegram] Erro retornado pela API do Telegram:', telegramData);
-      return res.status(500).json({ status: 'error', message: 'Falha no envio para o Telegram.', details: telegramData });
+    const photoData = await photoRes.json();
+    if (!photoRes.ok || !photoData.ok) {
+      console.error('[Telegram] Erro retornado pela API do Telegram (Photo):', photoData);
+      return res.status(500).json({ status: 'error', message: 'Falha no envio da foto para o Telegram.', details: photoData });
     }
 
-    console.log(`[Telegram] Certificado de ${name} enviado com sucesso.`);
-    res.json({ status: 'success', message: 'Certificado enviado com sucesso.' });
+    // 2. Envia o documento PDF logo em seguida
+    const pdfBuffer = Buffer.from(pdfBase64, 'base64');
+    const pdfFile = new File([pdfBuffer], filenamePdf, { type: 'application/pdf' });
+
+    const pdfFormData = new FormData();
+    pdfFormData.append('chat_id', TELEGRAM_CHAT_ID);
+    pdfFormData.append('document', pdfFile);
+
+    console.log(`[Telegram] Enviando documento PDF para o chat ${TELEGRAM_CHAT_ID}...`);
+    const pdfRes = await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendDocument`, {
+      method: 'POST',
+      body: pdfFormData
+    });
+
+    const pdfData = await pdfRes.json();
+    if (!pdfRes.ok || !pdfData.ok) {
+      console.error('[Telegram] Erro retornado pela API do Telegram (Document):', pdfData);
+      return res.status(500).json({ status: 'error', message: 'Falha no envio do PDF para o Telegram.', details: pdfData });
+    }
+
+    console.log(`[Telegram] Imagem e PDF de ${name} enviados com sucesso.`);
+    res.json({ status: 'success', message: 'Certificados enviados com sucesso.' });
   } catch (error) {
     console.error('[Telegram] Erro interno ao processar envio:', error);
-    res.status(500).json({ status: 'error', message: 'Erro interno no servidor ao enviar documento.' });
+    res.status(500).json({ status: 'error', message: 'Erro interno no servidor ao enviar certificado.' });
   }
 });
 
