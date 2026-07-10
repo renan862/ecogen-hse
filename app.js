@@ -111,7 +111,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // A API do YouTube requer uma função global onYouTubeIframeAPIReady
     window.onYouTubeIframeAPIReady = function () {
         player = new YT.Player('hse-video', {
-            videoId: 'HqzmLO4Pi7A',
+            videoId: 'bX831WFoyEc',
             playerVars: {
                 'autoplay': 0,
                 'controls': 0,       // Esconde controles padrão do YouTube
@@ -861,9 +861,9 @@ document.addEventListener('DOMContentLoaded', () => {
             margin: 0,
             filename: filename,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2, 
-                useCORS: true, 
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
                 logging: false,
                 letterRendering: true
             },
@@ -871,9 +871,9 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         // Converte o certificado em datauristring e envia para o servidor local
-        html2pdf().from(certElement).set(opt).output('datauristring').then(function(pdfDataUri) {
+        html2pdf().from(certElement).set(opt).output('datauristring').then(function (pdfDataUri) {
             const base64Data = pdfDataUri.split(',')[1];
-            
+
             fetch('/api/send-telegram', {
                 method: 'POST',
                 headers: {
@@ -890,9 +890,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     verificationCode: verificationCode
                 })
             })
-            .then(res => res.json())
-            .then(res => console.log('[Telegram] Resposta do envio:', res))
-            .catch(err => console.error('[Telegram] Erro ao enviar para o Telegram:', err));
+                .then(res => res.json())
+                .then(res => console.log('[Telegram] Resposta do envio:', res))
+                .catch(err => console.error('[Telegram] Erro ao enviar para o Telegram:', err));
         });
     }
 
@@ -966,9 +966,9 @@ document.addEventListener('DOMContentLoaded', () => {
             margin: 0,
             filename: filename,
             image: { type: 'jpeg', quality: 0.98 },
-            html2canvas: { 
-                scale: 2, 
-                useCORS: true, 
+            html2canvas: {
+                scale: 2,
+                useCORS: true,
                 logging: false,
                 letterRendering: true
             },
