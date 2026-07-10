@@ -135,6 +135,16 @@ document.addEventListener('DOMContentLoaded', () => {
         updateVideoTime();
         // Inicializa o volume com base no slider
         player.setVolume(parseFloat(volumeSlider.value) * 100);
+
+        // Força a desativação de legendas por padrão se o player suportar a remoção
+        try {
+            if (typeof player.unloadModule === 'function') {
+                player.unloadModule('captions');
+                player.unloadModule('cc');
+            }
+        } catch (e) {
+            console.error('Erro ao desativar legendas:', e);
+        }
     }
 
     function onPlayerStateChange(event) {
@@ -143,6 +153,14 @@ document.addEventListener('DOMContentLoaded', () => {
             videoContainer.classList.add('playing');
             playPauseBtn.innerHTML = '<i data-lucide="pause"></i>';
             lucide.createIcons();
+
+            // Força a desativação de legendas ao iniciar a reprodução
+            try {
+                if (typeof player.unloadModule === 'function') {
+                    player.unloadModule('captions');
+                    player.unloadModule('cc');
+                }
+            } catch (e) {}
 
             // Monitora o tempo atual do vídeo a cada 250ms
             clearInterval(updateInterval);
