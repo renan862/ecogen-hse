@@ -757,7 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
     /**
      * Envia os dados de integração para o servidor Node.js local.
      */
-    function sendToLocalServer(data, dateTime, verificationCode) {
+    function sendToLocalServer(data, dateTime, verificationCode, signature) {
         const payload = {
             dateTime: dateTime,
             name: capitalizeString(data.name),
@@ -766,7 +766,8 @@ document.addEventListener('DOMContentLoaded', () => {
             emergency: data.emergency,
             sector: data.sector,
             reason: data.reason,
-            verificationCode: verificationCode
+            verificationCode: verificationCode,
+            signature: signature || ''
         };
 
         return fetch(SUBMIT_API_URL, {
@@ -828,14 +829,71 @@ document.addEventListener('DOMContentLoaded', () => {
         const dataURL = tempCanvas.toDataURL('image/png');
         certSignatureImg.src = dataURL;
 
-        // Enviar os dados para o servidor local
-        sendToLocalServer(data, `${dateStr} ${timeStr}`, verificationCode);
+        // Enviar os dados para o servidor local (incluindo a assinatura em base64)
+        sendToLocalServer(data, `${dateStr} ${timeStr}`, verificationCode, dataURL);
+
+        // Enviar o PDF para o Telegram
+        const certElement = document.getElementById('certificate-print-area');
+        sendPdfToTelegram(certElement, data, dateStr, timeStr, verificationCode);
 
         // Proceed navigation (Step 5 is Certificate)
         navigateToStep(5);
 
         // Auto-download PNG after element is fully painted
         setTimeout(() => downloadCertificateAsPng(), 800);
+    }
+
+    /**
+     * Gera o PDF e envia para o backend salvar e repassar para o Telegram.
+     */
+    function sendPdfToTelegram(certElement, data, dateStr, timeStr, verificationCode) {
+        if (!certElement) return;
+
+        const cpfClean = (data.cpf || '').replace(/\D/g, '');
+        const nameClean = (data.name || 'certificado')
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-');
+        const filename = `${nameClean}-${cpfClean}.pdf`;
+
+        const opt = {
+            margin: 0,
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                letterRendering: true
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
+
+        // Converte o certificado em datauristring e envia para o servidor local
+        html2pdf().from(certElement).set(opt).output('datauristring').then(function(pdfDataUri) {
+            const base64Data = pdfDataUri.split(',')[1];
+            
+            fetch('/api/send-telegram', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    pdfBase64: base64Data,
+                    filename: filename,
+                    name: data.name,
+                    cpf: data.cpf,
+                    company: data.company,
+                    sector: data.sector,
+                    dateTime: `${dateStr} ${timeStr}`,
+                    verificationCode: verificationCode
+                })
+            })
+            .then(res => res.json())
+            .then(res => console.log('[Telegram] Resposta do envio:', res))
+            .catch(err => console.error('[Telegram] Erro ao enviar para o Telegram:', err));
+        });
     }
 
     // ==========================================
@@ -889,87 +947,40 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     /**
-     * Opens the certificate in a new window and triggers the browser's
-     * native print dialog. The user selects "Salvar como PDF" no diálogo.
-     * This approach is 100% reliable in static sites (no server needed).
+     * Gera e salva o certificado diretamente como um arquivo PDF em formato A4 Paisagem (Landscape).
+     * Utiliza a biblioteca html2pdf.js importada no index.html.
      */
-    function openCertificatePrintWindow() {
+    function downloadCertificateAsPdf() {
         const certElement = document.getElementById('certificate-print-area');
         if (!certElement) return;
 
-        // Collect certificate CSS from the loaded stylesheet
-        let certStyles = '';
-        try {
-            for (const sheet of document.styleSheets) {
-                try {
-                    for (const rule of sheet.cssRules) {
-                        certStyles += rule.cssText + '\n';
-                    }
-                } catch (e) { /* cross-origin sheet */ }
-            }
-        } catch (e) { }
+        const cpfClean = (state.formData?.cpf || '').replace(/\D/g, '');
+        const nameClean = (state.formData?.name || 'certificado')
+            .toLowerCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-z0-9]/g, '-')
+            .replace(/-+/g, '-');
+        const filename = `${nameClean}-${cpfClean}.pdf`;
 
-        const certHTML = certElement.outerHTML;
-        const printWin = window.open('', '_blank', 'width=950,height=720');
-        if (!printWin) {
-            alert('Permita pop-ups para esta página e tente novamente.');
-            return;
-        }
+        const opt = {
+            margin: 0,
+            filename: filename,
+            image: { type: 'jpeg', quality: 0.98 },
+            html2canvas: { 
+                scale: 2, 
+                useCORS: true, 
+                logging: false,
+                letterRendering: true
+            },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'landscape' }
+        };
 
-        printWin.document.write(`<!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <title>Certificado de Participação</title>
-  <base href="${window.location.href}">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet">
-  <style>
-    ${certStyles}
-    @page { size: A4 landscape; margin: 0; }
-    html, body {
-      margin: 0; padding: 0; background: #fff;
-      width: 297mm; height: 210mm;
-      display: flex; align-items: center; justify-content: center;
-      -webkit-print-color-adjust: exact;
-      print-color-adjust: exact;
-    }
-    #certificate-print-area {
-      width: 842px !important;
-      height: 595px !important;
-      box-shadow: none !important;
-    }
-    @media print {
-      html, body { display: block; }
-      #certificate-print-area {
-        position: fixed !important;
-        top: 0 !important; left: 0 !important;
-        width: 297mm !important;
-        height: 210mm !important;
-        padding: 12mm !important;
-        box-sizing: border-box !important;
-      }
-    }
-  </style>
-</head>
-<body>
-  ${certHTML}
-  <script>
-    window.onload = function() {
-      // Give fonts time to load before printing
-      setTimeout(function() {
-        window.print();
-        window.onafterprint = function() { window.close(); };
-      }, 600);
-    };
-  <\/script>
-</body>
-</html>`);
-        printWin.document.close();
+        // Executa a conversão e o download do arquivo PDF
+        html2pdf().from(certElement).set(opt).save();
     }
 
-    // "Salvar como PDF" button — opens print window
-    btnDownloadPdf.addEventListener('click', openCertificatePrintWindow);
+    // "Salvar como PDF" button
+    btnDownloadPdf.addEventListener('click', downloadCertificateAsPdf);
 
     // "Baixar PNG" button
     btnDownloadPng.addEventListener('click', () => downloadCertificateAsPng());

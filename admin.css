@@ -281,6 +281,30 @@
     font-size: 0.9rem;
 }
 
+/* Certificate Button Styles */
+.btn-cert {
+    background: none;
+    border: none;
+    color: var(--color-primary);
+    cursor: pointer;
+    padding: 0.35rem;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+}
+
+.btn-cert:hover {
+    background-color: var(--color-primary-light);
+    transform: scale(1.1);
+}
+
+.btn-cert svg {
+    width: 18px;
+    height: 18px;
+}
+
 /* Delete Button Styles */
 .btn-delete {
     background: none;

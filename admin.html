@@ -8,12 +8,14 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap"
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@600;700&family=Inter:wght@300;400;500;600;700&family=Montserrat:wght@600;700;800&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="admin.css">
     <!-- Lucide Icons for premium visuals -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- html2pdf.js for generating PDF client-side -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <!-- SheetJS for exporting to Excel .xlsx -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
@@ -33,15 +35,15 @@
     <main class="app-container">
 
         <!-- Dashboard Header -->
-        <!--
+
         <div class="dashboard-header">
             <h1>Controle de Integração HSE</h1>
             <p>Gerencie, pesquise e exporte os registros dos colaboradores que concluíram o treinamento de segurança.
             </p>
-        </div>-->
+        </div>
 
         <!-- Stats Section -->
-        <!--
+
         <section class="stats-grid">
             <div class="stat-card">
                 <div class="stat-icon"><i data-lucide="users"></i></div>
@@ -49,7 +51,7 @@
                     <span class="stat-label">Total de Integrações</span>
                     <h2 class="stat-value" id="stat-total">0</h2>
                 </div>
-            </div>
+            </div><!--
             <div class="stat-card">
                 <div class="stat-icon"><i data-lucide="calendar"></i></div>
                 <div class="stat-info">
@@ -63,9 +65,9 @@
                     <span class="stat-label">Setor mais Ativo</span>
                     <h2 class="stat-value" id="stat-top-sector">-</h2>
                 </div>
-            </div>
+            </div>-->
         </section>
--->
+
         <!-- Filters and Table Card -->
         <section class="card-wrapper admin-card">
             <!-- Filter Bar -->
@@ -127,6 +129,66 @@
             </div>
         </section>
     </main>
+
+    <!-- Área oculta do certificado para geração de PDF via admin -->
+    <div style="display: none;">
+        <div class="certificate-container" id="certificate-print-area">
+            <div class="cert-border-gold">
+                <div class="cert-border-inner">
+                    <div class="cert-watermark">
+                        <i data-lucide="shield"></i>
+                    </div>
+                    <div class="cert-header">
+                        <div class="cert-logo"><img style="width: 90px;" src="media/logo.png" alt="Ecogen Brasil"></div>
+                        <div class="cert-badge">INTEGRAÇÃO DE SEGURANÇA</div>
+                    </div>
+                    <div class="cert-body">
+                        <h1 class="cert-title">Certificado de Participação</h1>
+                        <p class="cert-intro">Certificamos que o colaborador/visitante</p>
+                        <p class="cert-name" id="cert-display-name">NOME COMPLETO</p>
+                        <p class="cert-details">
+                            portador do CPF <strong id="cert-display-cpf">000.000.000-00</strong>,
+                            representante da empresa <strong id="cert-display-company">Nome Empresa</strong>,
+                            participou e concluiu com êxito o treinamento de <strong>Integração de Segurança, Saúde e
+                                Meio Ambiente (HSE)</strong> da unidade da Ecogen Brasil.
+                        </p>
+                        <p class="cert-compliance">
+                            O portador declarou ciência e conformidade com as regras internas de segurança, incluindo o
+                            porte de EPIs obrigatórios para o setor
+                            <strong id="cert-display-sector">Setor</strong> e a proibição do porte de adornos nas
+                            instalações.
+                        </p>
+                    </div>
+                    <div class="cert-footer">
+                        <div class="cert-signature-block">
+                            <div class="cert-sig-img-wrap"
+                                style="display: flex; align-items: center; justify-content: center; height: 50px;">
+                                <img id="cert-signature-img" src="" alt="Assinatura Digital"
+                                    style="max-height: 100%; max-width: 180px; object-fit: contain; display: none;">
+                                <span id="cert-signature-text"
+                                    style="font-family: 'Dancing Script', cursive; font-size: 26px; color: #0D4E63; font-weight: bold; font-style: italic; display: none;"></span>
+                            </div>
+                            <div class="cert-sig-line"></div>
+                            <span class="cert-sig-title">Assinatura do Participante</span>
+                        </div>
+                        <div class="cert-info-block">
+                            <div class="cert-date" id="cert-display-date">Realizado em: --/--/---- às --:--</div>
+                            <div class="cert-verification" id="cert-display-hash">CÓD. VERIFICAÇÃO: A1B2-C3D4-E5F6-G7H8
+                            </div>
+                        </div>
+                        <div class="cert-signature-block">
+                            <div class="cert-sig-img-wrap">
+                                <img id="cert-official-signature-img" src="media/assinatura.png"
+                                    alt="Assinatura Ecogen">
+                            </div>
+                            <div class="cert-sig-line"></div>
+                            <span class="cert-sig-title">Ecogen Brasil S/A</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <footer class="app-footer">
         <p>© 2026 Ecogen Brasil. Todos os direitos reservados. Compromisso com a Vida e Segurança em Primeiro Lugar.</p>
